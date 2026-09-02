@@ -7,6 +7,7 @@ namespace YiiRocks\Voyti\TwoFactor\Email\tests;
 use Composer\InstalledVersions;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psr\SimpleCache\CacheInterface;
+use YiiRocks\Voyti\TwoFactor\Email\EmailTwoFactorConfig;
 use YiiRocks\Voyti\TwoFactor\Email\EmailTwoFactorMethod;
 use YiiRocks\Voyti\TwoFactor\Email\Service\EmailCodeGeneratorService;
 use YiiRocks\Voyti\TwoFactor\Email\tests\Support\FakeUrlGenerator;
@@ -41,9 +42,9 @@ abstract class TestCase extends BaseTestCase
         );
     }
 
-    protected function createEmailValidator(): EmailValidator
+    protected function createEmailValidator(?EmailTwoFactorConfig $config = null): EmailValidator
     {
-        return new EmailValidator($this->createTranslator());
+        return new EmailValidator($this->createTranslator(), $config ?? new EmailTwoFactorConfig(300, 5));
     }
 
     protected function createFakeUrlGenerator(): FakeUrlGenerator

@@ -7,13 +7,19 @@ use Yiisoft\Router\Route;
 
 return [
     'yiirocks/voyti' => [
-        'twoFactorMethodRoutes' => [
-            Route::get('two-factor/email/')
-                ->name('voyti/user-two-factor-email')
-                ->action([EmailController::class, 'settings']),
-            Route::post('two-factor/email/send-code')
-                ->name('voyti/user-two-factor-email-send-code')
-                ->action([EmailController::class, 'sendCode']),
+        '2fa' => [
+            'email' => [
+                'codeLifespan' => 600,
+                'maxAttempts' => 5,
+            ],
+            'methodRoutes' => [
+                Route::get('two-factor/email/')
+                    ->name('voyti/user-two-factor-email')
+                    ->action([EmailController::class, 'settings']),
+                Route::post('two-factor/email/send-code')
+                    ->name('voyti/user-two-factor-email-send-code')
+                    ->action([EmailController::class, 'sendCode']),
+            ],
         ],
     ],
 ];

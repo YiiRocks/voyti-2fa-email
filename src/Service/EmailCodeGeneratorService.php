@@ -33,6 +33,8 @@ final readonly class EmailCodeGeneratorService
 
         $twoFactor = UserTwoFactor::forUser($user);
         $twoFactor->setSecret($code);
+        $twoFactor->setSecretCreatedAt(time());
+        $twoFactor->setSecretAttempts(0);
         $twoFactor->save();
 
         $this->send($user->getEmail(), $code);

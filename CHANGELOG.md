@@ -2,6 +2,8 @@
 
 ## 1.0.2 under development
 
+- Enh: Expire email verification codes after ten minutes and limit each code to five attempts by default.
+
 ## 1.0.1 - August 21, 2026
 
 - Chg: Consolidate Bootstrap5 views into `yiirocks/voyti-views-bootstrap5` package.

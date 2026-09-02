@@ -6,6 +6,7 @@ namespace YiiRocks\Voyti\TwoFactor\Email\tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
+use YiiRocks\Voyti\TwoFactor\Email\EmailTwoFactorConfig;
 use YiiRocks\Voyti\TwoFactor\Email\tests\Support\AutoDatabaseSetupTrait;
 use YiiRocks\Voyti\TwoFactor\Email\tests\Support\UserFactoryTrait;
 use YiiRocks\Voyti\TwoFactor\Model\UserTwoFactor;
@@ -16,11 +17,26 @@ final class EmailTwoFactorMethodTest extends TestCase
     use AutoDatabaseSetupTrait;
     use UserFactoryTrait;
 
+    public function testCodeGenerationResetsAttempts(): void
+    {
+        $user = $this->createUser();
+        $code = $this->createEmailCodeGeneratorService()->run($user);
+        $validator = $this->createEmailValidator(new EmailTwoFactorConfig(300, 2));
+
+        self::assertFalse($validator->validate($user, '000000'));
+        self::assertFalse($validator->validate($user, '000000'));
+        self::assertFalse($validator->validate($user, $code));
+    }
+
     public function testCodeGenerationStoresAndSends(): void
     {
         $user = $this->createUser(email: 'user@example.com');
         $mailer = $this->createMailCapture();
         $service = $this->createEmailCodeGeneratorService($mailer);
+        $twoFactor = $this->createUserTwoFactor((int) $user->getId(), secret: 'expired');
+        $twoFactor->setSecretCreatedAt(null);
+        $twoFactor->setSecretAttempts(1);
+        $twoFactor->save();
 
         $code = $service->run($user);
 
@@ -33,6 +49,9 @@ final class EmailTwoFactorMethodTest extends TestCase
         self::assertSame('Your verification code', (string) $message->getSubject());
         $body = (string) $message->getHtmlBody() . (string) $message->getTextBody();
         self::assertStringContainsString($code, $body);
+
+        $validator = $this->createEmailValidator(new EmailTwoFactorConfig(300, 1));
+        self::assertTrue($validator->validate($user, $code));
     }
 
     public function testCodeGenerationStoresCodeEvenWhenMailerThrows(): void
@@ -77,6 +96,28 @@ final class EmailTwoFactorMethodTest extends TestCase
         self::assertNotNull(UserTwoFactor::forUser($user)->getSecret());
     }
 
+    public function testValidatorRejectsExpiredAndExhaustedCodes(): void
+    {
+        $user = $this->createUser();
+        $twoFactor = $this->createUserTwoFactor((int) $user->getId(), secret: '654321');
+        $validator = $this->createEmailValidator(new EmailTwoFactorConfig(300, 2));
+
+        $twoFactor->setSecretCreatedAt(time() - 301);
+        $twoFactor->save();
+
+        self::assertFalse($validator->validate($user, '654321'));
+        self::assertSame('Invalid verification code.', $validator->getErrorMessage());
+
+        $twoFactor->setSecretCreatedAt(time());
+        $twoFactor->setSecretAttempts(0);
+        $twoFactor->save();
+
+        self::assertFalse($validator->validate($user, '000000'));
+        self::assertFalse($validator->validate($user, '000000'));
+        self::assertFalse($validator->validate($user, '654321'));
+        self::assertSame('Invalid verification code.', $validator->getErrorMessage());
+    }
+
     #[DataProvider('verifyProvider')]
     public function testVerify(array $input, bool $expected, ?string $storedSecret = '654321', ?string $expectedError = ''): void
     {
@@ -95,8 +136,8 @@ final class EmailTwoFactorMethodTest extends TestCase
     {
         return [
             'correct code' => [['code' => '654321'], true],
-            'wrong code' => [['code' => 'nope'], false],
-            'missing code key' => [[], false],
+            'wrong code' => [['code' => 'nope'], false, '654321', 'Invalid verification code.'],
+            'missing code key' => [[], false, '654321', 'Invalid verification code.'],
             'no stored code with submission' => [['code' => '123456'], false, null, 'Email two factor authentication is not configured.'],
             'no stored code with empty submission' => [['code' => ''], false, null, 'Email two factor authentication is not configured.'],
         ];

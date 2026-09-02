@@ -52,6 +52,9 @@ trait UserFactoryTrait
         $record->setEnabled($enabled);
         $record->setMethod($method);
         $record->setSecret($secret);
+        if ($secret !== null) {
+            $record->setSecretCreatedAt(time());
+        }
         $record->save();
 
         return $record;

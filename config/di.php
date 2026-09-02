@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use YiiRocks\Voyti\TwoFactor\Email\Controller\EmailController;
+use YiiRocks\Voyti\TwoFactor\Email\EmailTwoFactorConfig;
 use YiiRocks\Voyti\TwoFactor\Email\EmailTwoFactorMethod;
 use YiiRocks\Voyti\TwoFactor\Email\Service\EmailCodeGeneratorService;
 use YiiRocks\Voyti\TwoFactor\Email\Validator\EmailValidator;
@@ -13,6 +14,10 @@ use Yiisoft\Translator\SimpleMessageFormatter;
 /** @var array $params */
 
 return [
+    EmailTwoFactorConfig::class => static fn() => new EmailTwoFactorConfig(
+        codeLifespan: $params['yiirocks/voyti']['2fa']['email']['codeLifespan'] ?? 600,
+        maxAttempts: $params['yiirocks/voyti']['2fa']['email']['maxAttempts'] ?? 5,
+    ),
     EmailValidator::class => EmailValidator::class,
     EmailCodeGeneratorService::class => EmailCodeGeneratorService::class,
 
