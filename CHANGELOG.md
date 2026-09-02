@@ -1,6 +1,6 @@
 # Yii3 Voyti 2FA Email Changelog
 
-## 1.0.2 under development
+## 1.0.2 - September 2, 2026
 
 - Enh: Expire email verification codes after ten minutes and limit each code to five attempts by default.
 
